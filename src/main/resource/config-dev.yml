@@ -1,0 +1,14 @@
+server:
+  host: 127.0.0.1
+  workers: 1
+
+database:
+  dialect: mysql
+  # When use sqlite do not need to set url and default in src/main/resource/alembic/db/server.db
+  # Url format: driver://user:pass@localhost:port/dbname
+  url: "mysql+aiomysql://root:123456@localhost:3306/df"
+
+security:
+  enable: False
+  enable_swagger: True
+  access_token_expire_minutes: 300

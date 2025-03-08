@@ -1,0 +1,30 @@
+[project]
+name = "sc-emb-search-server"
+version = "0.1.0"
+description = "Cross-species Single-cell Embedding Retrieval Database"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi[standard]>=0.115.3",
+    "sqlmodel>=0.0.22",
+    "alembic>=1.13.3",
+    "aiosqlite>=0.20.0",
+    "pyjwt>=2.9.0",
+    "passlib[bcrypt]>=1.7.4",
+    "loguru>=0.7.2",
+    "aiomysql>=0.2.0",
+    "pandas>=2.2.3",
+    "xlsxwriter>=3.2.0",
+    "openpyxl>=3.1.5",
+    "matplotlib>=3.9.4",
+]
+
+[[tool.uv.index]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple/"
+default = true
+
+[tool.ruff]
+include = ["src/**/*.py"]
+exclude = ["doc/**/*.py"]
+line-length = 120

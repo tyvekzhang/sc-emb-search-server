@@ -1,0 +1,35 @@
+server:
+  name: DaFengServer
+  host: 0.0.0.0
+  port: 19001
+  version: 0.1.0
+  app_desc: Da feng helps us work more easily and happily.
+  api_version: /api/v1
+  workers: 2
+
+database:
+  dialect: sqlite
+  # When use sqlite do not need to set url and default in src/main/resource/alembic/db/server.db
+  # Url format: driver://user:pass@localhost:port/dbname
+  url: ""
+  pool_size: 10
+  max_overflow: 20
+  pool_recycle: 1800
+  echo_sql: True
+  pool_pre_ping: True
+
+security:
+  enable: True
+  enable_swagger: False
+  algorithm: HS256
+  secret_key: 43365f0e3e88863ff5080ac382d7717634a8ef72d8f2b52d436fc9847dbecc64
+  access_token_expire_minutes: 30
+  refresh_token_expire_days: 30
+  white_list_routes: /v1/probe/liveness, /v1/probe/readiness, /v1/user/login, /v1/user/add, /v1/user/refreshTokens, /v1/user/export
+  backend_cors_origins: http://127.0.0.1:8200, http://localhost:8200, http://localhost
+
+gen:
+  author: "tyvekzhang"
+  package_name: "com.singularity.modules.reading"
+  auto_remove_pre: True
+  table_prefix: "read_,sys_,acc_,system_"
