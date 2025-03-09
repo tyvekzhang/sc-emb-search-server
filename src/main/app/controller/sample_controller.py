@@ -1,18 +1,20 @@
 """Sample 前端控制器"""
 
 from __future__ import annotations
-from typing import Dict, Annotated, List, Any, Union
+
+from typing import Dict, Annotated, List, Any
+
 from fastapi import APIRouter, Query, UploadFile, Form, Request
-from starlette.responses import StreamingResponse
 from src.main.app.common.schema.response_schema import HttpResponse
 from src.main.app.common.util.excel_util import export_excel
 from src.main.app.mapper.sample_mapper import sampleMapper
 from src.main.app.model.sample_model import SampleDO
 from src.main.app.schema.common_schema import PageResult
 from src.main.app.schema.sample_schema import SampleQuery, SampleModify, SampleCreate, \
-    SampleBatchModify, SampleDetail
+    SampleBatchModify, SampleDetail, SampleOptions
 from src.main.app.service.impl.sample_service_impl import SampleServiceImpl
 from src.main.app.service.sample_service import SampleService
+from starlette.responses import StreamingResponse
 
 sample_router = APIRouter()
 sample_service: SampleService = SampleServiceImpl(mapper=sampleMapper)
@@ -26,6 +28,13 @@ async def fetch_sample_by_page(
         request=request
     )
     return HttpResponse.success(sample_page_result)
+
+@sample_router.get("/list")
+async def fetch_all_sample_by_species(
+    species: Annotated[str, Query()], request: Request
+) -> Dict[str, Any]:
+    service_response: List[SampleOptions] = await sample_service.fetch_all_sample_by_species(species=species, request=request)
+    return HttpResponse.success(service_response)
 
 @sample_router.get("/detail/{id}")
 async def fetch_sample_detail(
@@ -43,6 +52,12 @@ async def export_sample_page(
     request: Request, ids: list[int] = Query(...)
 ) -> StreamingResponse:
     return await sample_service.export_sample_page(ids=ids, request=request)
+
+@sample_router.get("/download")
+async def download_sample_page(
+    request: Request, id: int = Query(...)
+) -> StreamingResponse:
+    return await sample_service.download_sample_page(id=id, request=request)
 
 @sample_router.post("/create")
 async def create_sample(

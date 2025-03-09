@@ -30,3 +30,9 @@ class SampleService(ServiceBase[SampleDO], ABC):
 
     @abstractmethod
     async def import_sample(self, *, file: UploadFile, request: Request) -> List[SampleCreate]:...
+
+    @abstractmethod
+    async def download_sample_page(self, id: int, request: Request):...
+
+    @abstractmethod
+    async def fetch_all_sample_by_species(self, species: str, request: Request): ...

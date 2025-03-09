@@ -30,3 +30,7 @@ class FileService(ServiceBase[FileDO], ABC):
 
     @abstractmethod
     async def import_file(self, *, file: UploadFile, request: Request) -> List[FileCreate]:...
+
+    @abstractmethod
+    async def upload_file(self, file: UploadFile, request: Request):
+        pass

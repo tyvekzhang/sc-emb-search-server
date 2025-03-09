@@ -32,6 +32,29 @@ class SamplePage(BaseModel):
     # 创建时间
     create_time: Optional[datetime] = None
 
+class SampleExport(BaseModel):
+    """
+    样本分页信息
+    """
+    # 物种
+    species: Optional[str] = None
+    # 样本名
+    sample_id: Optional[str] = None
+    # 项目名
+    project_id: Optional[str] = None
+    # 组织、器官
+    tissue: Optional[str] = None
+    # 细胞数
+    cell_count: Optional[int] = None
+    # 项目标题
+    project_title: Optional[str] = None
+    # 项目总结
+    project_summary: Optional[str] = None
+    # 测序平台
+    platform: Optional[str] = None
+    # 创建时间
+    create_time: Optional[datetime] = None
+
 class SampleQuery(PageBase):
     """
     样本查询参数
@@ -46,6 +69,8 @@ class SampleQuery(PageBase):
     cell_count: Optional[int] = None
     # 项目标题
     project_title: Optional[str] = None
+    # 样本名
+    sample_id: Optional[str] = None
     # 项目总结
     project_summary: Optional[str] = None
     # 测序平台
@@ -128,6 +153,11 @@ class SampleBatchModify(BaseModel):
     platform: Optional[str] = None
     # 扩展字段
     ext: Optional[str] = None
+
+class SampleOptions(BaseModel):
+    id: int
+    # 样本名
+    sample_id: str = None
 
 class SampleDetail(BaseModel):
     """

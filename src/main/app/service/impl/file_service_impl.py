@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 import io
+import os.path
+import uuid
 from typing import Optional, List
 from typing import Union
 import pandas as pd
 from fastapi import UploadFile, Request
 from fastapi.exceptions import ResponseValidationError
 from starlette.responses import StreamingResponse
+
+from src.main.app.common.config.config_manager import load_config
 from src.main.app.common.enums.enum import FilterOperators
+from src.main.app.common.exception.exception import ParameterException
 from src.main.app.common.util.excel_util import export_excel
 from src.main.app.common.util.validate_util import ValidateService
 from src.main.app.mapper.file_mapper import FileMapper
@@ -125,3 +130,23 @@ class FileServiceImpl(ServiceBaseImpl[FileMapper, FileDO], FileService):
                 return file_create_list
 
         return file_create_list
+
+    async def upload_file(self, file: UploadFile, request: Request):
+        file_name = file.filename
+        if not file_name.endswith(".h5ad"):
+            raise ParameterException
+        h5ad_dir = str(load_config().server.h5ad_dir) + "/" + "customer"
+        save_file_name = uuid.uuid4().hex + ".h5ad"
+        h5ad_path = os.path.join(h5ad_dir, save_file_name)
+        if not os.path.exists(h5ad_dir):
+            os.makedirs(h5ad_dir)
+        # 以二进制写入模式打开文件
+        with open(h5ad_path, "wb") as f:
+            # 异步读取上传文件的内容
+            contents = await file.read()
+            # 将内容写入到指定文件
+            f.write(contents)
+        file_data = FileDO(name=file_name, path=save_file_name, size=file.size)
+        await self.save(data=file_data)
+        return file_data.id
+        

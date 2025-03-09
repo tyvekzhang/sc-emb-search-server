@@ -65,6 +65,13 @@ async def import_file(
     file_create_list: List[FileCreate] = await file_service.import_file(file=file, request=request)
     return HttpResponse.success(file_create_list)
 
+@file_router.post("/upload")
+async def upload_file(
+    request: Request, file: UploadFile = Form()
+) -> Dict[str, Any]:
+    service_response = await file_service.upload_file(file=file, request=request)
+    return HttpResponse.success(data=service_response)
+
 @file_router.delete("/remove/{id}")
 async def remove(
     id: int, request: Request

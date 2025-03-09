@@ -14,32 +14,52 @@ async def export_excel(schema: Type[BaseModel], file_name: str, data_list: List[
     Export a template or data as an Excel file with Microsoft YaHei font for all cells and auto-width headers.
     """
     field_names = list(schema.model_fields.keys())
-    user_export_df = pd.DataFrame(columns=field_names)
+
+    # 创建 DataFrame
     if data_list:
         data_dicts = [item.model_dump() for item in data_list]
-        user_export_df = pd.concat([user_export_df, pd.DataFrame(data_dicts)], ignore_index=True)
+        user_export_df = pd.DataFrame(data_dicts, columns=field_names)
+    else:
+        user_export_df = pd.DataFrame(columns=field_names)
 
-    filename = f"{file_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+    # 生成文件名
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    filename = f"{file_name}_{timestamp}.xlsx"
     stream = io.BytesIO()
 
     try:
         with pd.ExcelWriter(stream, engine="openpyxl") as writer:
             user_export_df.to_excel(writer, index=False, sheet_name=filename)
-            worksheet = writer.sheets[filename]
-            for row in worksheet.iter_rows():
-                for cell in row:
-                    cell.font = Font(name="Microsoft YaHei")
-            for idx, col in enumerate(user_export_df.columns, 1):
-                column_letter = get_column_letter(idx)
-                column_width = max(len(str(col)), 15)
-                worksheet.column_dimensions[column_letter].width = column_width
 
+            # 获取 worksheet
+            workbook = writer.book
+            worksheet = workbook.active  # 获取默认工作表
+
+            # 设置字体 & 表头加粗
+            yahei_font = Font(name="Microsoft YaHei")
+            bold_font = Font(name="Microsoft YaHei", bold=True)
+
+            for row_idx, row in enumerate(worksheet.iter_rows(), start=1):
+                for cell in row:
+                    cell.font = yahei_font if row_idx > 1 else bold_font  # 第一行加粗
+
+            # 计算最佳列宽
+            for col_idx, col_name in enumerate(user_export_df.columns, start=1):
+                column_letter = get_column_letter(col_idx)
+                max_length = max(
+                    user_export_df[col_name].astype(str).map(len).max() if not user_export_df.empty else 0,
+                    len(col_name)
+                )
+                worksheet.column_dimensions[column_letter].width = max(max_length + 2, 15)  # 适当增加宽度
+
+        # 保存到流
         stream.seek(0)
         return StreamingResponse(
             stream,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
+
     except Exception as e:
         logger.error(f"Failed to export Excel: {e}")
         raise

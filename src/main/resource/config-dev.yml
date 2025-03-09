@@ -6,7 +6,7 @@ database:
   dialect: mysql
   # When use sqlite do not need to set url and default in src/main/resource/alembic/db/server.db
   # Url format: driver://user:pass@localhost:port/dbname
-  url: "mysql+aiomysql://root:123456@localhost:3306/df"
+  url: "mysql+aiomysql://root:123456@localhost:3306/sc-emb-search"
 
 security:
   enable: False
