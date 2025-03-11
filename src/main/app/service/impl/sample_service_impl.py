@@ -117,11 +117,9 @@ class SampleServiceImpl(ServiceBaseImpl[SampleMapper, SampleDO], SampleService):
             return sample_record
 
         server_config = load_config().server
-        h5ad_dir = server_config.h5ad_dir
-        if not os.path.exists(h5ad_dir):
-            os.makedirs(h5ad_dir)
+        built_in_dir = server_config.built_in_dir
         file_name = sample_record.sample_id + ".h5ad"
-        source_path = os.path.join(h5ad_dir, file_name)
+        source_path = os.path.join(built_in_dir, file_name)
 
         def file_iterator(file_path, chunk_size=1024 * 1024):
             with open(file_path, "rb") as f:

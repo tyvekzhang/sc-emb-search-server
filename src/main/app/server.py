@@ -47,7 +47,7 @@ app.mount("/static", StaticFiles(directory=os.path.join(resource_dir, "static"))
 router = create_router()
 app.include_router(router, prefix=server_config.api_version)
 
-origins = [origin.strip() for origin in config.security.backend_cors_origins.split(",")]
+origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from typing import Dict, Annotated, List, Any, Union
-from fastapi import APIRouter, Query, UploadFile, Form, Request
+from fastapi import APIRouter, Query, UploadFile, Form, Request, BackgroundTasks
 from starlette.responses import StreamingResponse
 from src.main.app.common.schema.response_schema import HttpResponse
 from src.main.app.common.util.excel_util import export_excel
@@ -44,6 +44,12 @@ async def export_job_page(
 ) -> StreamingResponse:
     return await job_service.export_job_page(ids=ids, request=request)
 
+@job_router.get("/export_result")
+async def export_job_page(
+    request: Request, job_id: int = Query(...)
+) -> StreamingResponse:
+    return await job_service.export_result(job_id=job_id, request=request)
+
 @job_router.post("/create")
 async def create_job(
     job_create: JobCreate, request: Request
@@ -53,9 +59,9 @@ async def create_job(
 
 @job_router.post("/submit")
 async def submit_job(
-    job_submit: JobSubmit, request: Request
+    job_submit: JobSubmit, request: Request, background_tasks: BackgroundTasks
 ) -> Dict[str, Any]:
-    job: JobDO = await job_service.submit_job(job_submit=job_submit, request=request)
+    job: JobDO = await job_service.submit_job(job_submit=job_submit, request=request, background_tasks=background_tasks)
     return HttpResponse.success(job.id)
 
 @job_router.get("/getResult")

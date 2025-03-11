@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from typing import Dict, Annotated, List, Any, Union
-from fastapi import APIRouter, Query, UploadFile, Form, Request
+from fastapi import APIRouter, Query, UploadFile, Form, Request, File
 from starlette.responses import StreamingResponse
 from src.main.app.common.schema.response_schema import HttpResponse
 from src.main.app.common.util.excel_util import export_excel
@@ -67,7 +67,7 @@ async def import_file(
 
 @file_router.post("/upload")
 async def upload_file(
-    request: Request, file: UploadFile = Form()
+    request: Request, file: UploadFile = File(...)
 ) -> Dict[str, Any]:
     service_response = await file_service.upload_file(file=file, request=request)
     return HttpResponse.success(data=service_response)

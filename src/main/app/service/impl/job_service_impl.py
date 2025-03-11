@@ -8,25 +8,31 @@ from typing import Optional, List
 from typing import Union
 
 import pandas as pd
-from fastapi import UploadFile, Request
+import scanpy as sc
+from fastapi import UploadFile, Request, BackgroundTasks
+from loguru import logger
+from scimilarity import CellQuery
+from scimilarity.utils import lognorm_counts, align_dataset
 from starlette.responses import StreamingResponse
 
+from src.main.app.common.cell_emb_search.cell_search_model import CellQuerySingleton
 from src.main.app.common.config.config_manager import load_config
 from src.main.app.common.enums.enum import FilterOperators
 from src.main.app.common.util.excel_util import export_excel
 from src.main.app.common.util.validate_util import ValidateService
 from src.main.app.mapper.file_mapper import fileMapper
-from src.main.app.mapper.job_mapper import JobMapper
+from src.main.app.mapper.job_mapper import JobMapper, jobMapper
 from src.main.app.mapper.job_result_mapper import jobResultMapper
+from src.main.app.mapper.sample_mapper import sampleMapper
 from src.main.app.model.file_model import FileDO
 from src.main.app.model.job_model import JobDO
 from src.main.app.model.job_result_model import JobResultDO
+from src.main.app.model.sample_model import SampleDO
 from src.main.app.schema.common_schema import PageResult
 from src.main.app.schema.job_result_schema import cell_emb_result
 from src.main.app.schema.job_schema import JobQuery, JobPage, JobDetail, JobCreate, JobSubmit, JobStatus
 from src.main.app.service.impl.service_base_impl import ServiceBaseImpl
 from src.main.app.service.job_service import JobService
-
 
 class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
     """
@@ -99,15 +105,95 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
 
     async def create_job(self, job_create: JobCreate, request: Request) -> JobDO:
         job: JobDO = JobDO(**job_create.model_dump())
-        # job.user_id = request.state.user_id
         return await self.save(data=job)
 
-    async def submit_job(self, job_submit: JobSubmit, request: Request) -> JobDO:
-        if job_submit.job_type == 1:
-            fileMapper.select_by_id(id=job_submit.file_info)
+    async def generate_search_result(self, job_submit: JobSubmit, job: JobDO):
+        session = self.mapper.db.session
+        job_id = job.id
+        file_name = str(job_id) + ".xlsx"
+        server_config = load_config().server
+        output_dir = server_config.output_dir
+        output_path = os.path.join(output_dir, file_name)
+        try:
+            h5ad_path: str = ""
+            file_info = job_submit.file_info
+
+            # 本地文件上传
+            if job_submit.job_type == 1:
+                customer_dir = server_config.customer_dir
+                file_record: FileDO = await fileMapper.select_by_id(id=file_info, db_session=session)
+                file_path = file_record.path
+                h5ad_path = os.path.join(customer_dir, file_path)
+            # 内置文件
+            elif job_submit.job_type == 2:
+                built_in_dir = server_config.built_in_dir
+                sample_record: SampleDO = await sampleMapper.select_by_id(id=file_info, db_session=session)
+                file_path = sample_record.sample_id + ".h5ad"
+                h5ad_path = os.path.join(built_in_dir, file_path)
+
+            # 使用 run_in_executor 将阻塞操作（如文件读取）放到线程池中执行
+            adata = sc.read_h5ad(h5ad_path)
+
+            cell_index = job_submit.cell_index
+            result_cell_count = job_submit.result_cell_count
+
+            if cell_index is None or cell_index < 0 or cell_index > adata.n_obs:
+                cell_index = 1
+            if result_cell_count is None or result_cell_count < 1 or result_cell_count > 10000:
+                result_cell_count = 10000
+
+            adata = adata[cell_index, :]
+            if "counts" not in adata.layers:
+                adata.layers['counts'] = adata.X.copy()
+            model_dir = load_config().server.model_dir
+            logger.info(f"开始加载模型")
+            cq = CellQuerySingleton(model_dir)
+            logger.info(f"模型加载完成")
+            adata = align_dataset(adata, cq.gene_order)
+            adata = lognorm_counts(adata)
+            adata.obsm["X_scimilarity"] = cq.get_embeddings(adata.X)
+            query_embedding = adata.obsm["X_scimilarity"]
+
+            nn_idxs, nn_dists, results_metadata = cq.search_nearest(query_embedding, k=result_cell_count)
+
+            # 将结果保存到 Excel 文件
+            results_metadata.to_excel(output_path)
+
+            # 更新任务状态
+            job.status = 3
+            await jobMapper.update_by_id(record=job, db_session=session)
+            logger.info(f"job已完成{job}")
+
+            # 保存文件记录
+            file_data = FileDO(name=file_name, path=file_name, size=os.path.getsize(output_path))
+            await fileMapper.insert(record=file_data, db_session=session)
+            logger.info(f"文件记录已保存{file_data}")
+
+            # 保存任务结果记录
+            job_result_data = JobResultDO(job_id=job_id, file_id=file_data.id, result_key="cell_search")
+            await jobResultMapper.insert(record=job_result_data, db_session=session)
+            logger.info(f"任务结果已保存{job_result_data}")
+            await session.commit()
+
+        except Exception as e:
+            logger.error(f"{e}")
+            job.status = 4
+            await jobMapper.update_by_id(record=job, db_session=session)
+            await session.commit()
+            logger.info(f"job已失败{job}")
+
+    async def submit_job(self, job_submit: JobSubmit, request: Request, background_tasks: BackgroundTasks) -> JobDO:
         job: JobDO = JobDO(**job_submit.model_dump())
-        # job.user_id = request.state.user_id
-        return await self.save(data=job)
+        # 正在进行中
+        job.status=2
+
+        await self.save(data=job)
+        logger.info(f"job已保存{job}")
+
+        # 异步执行 generate_search_result
+        background_tasks.add_task(self.generate_search_result, job_submit, job)
+
+        return job
 
     async def batch_create_job(self, *, job_create_list: List[JobCreate], request: Request) -> List[int]:
         job_list: List[JobDO] = [JobDO(**job_create.model_dump()) for job_create in job_create_list]
@@ -158,6 +244,7 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
         file_path = file_record.path
         output_dir = load_config().server.output_dir
         df = pd.read_excel(os.path.join(output_dir, file_path))
+        df = df.fillna("-")
         start = (current - 1) * page_size
         if start >= len(df):
             return {"status": status, "records": [], "total": len(df)}
@@ -166,3 +253,19 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
         data_dicts = paginated_df.to_dict(orient="records")
         cell_emb_results: List[cell_emb_result] = [cell_emb_result(**item) for item in data_dicts]
         return {"status": status, "records": cell_emb_results, "total": len(df)}
+
+    @staticmethod
+    async def export_result(job_id: int, request: Request):
+        output_dir = load_config().server.output_dir
+        file_name = str(job_id) + ".xlsx"
+        download_file_name = "export_data_" + file_name
+        result_path = os.path.join(output_dir, file_name)
+        def file_iterator(file_path, chunk_size=1024 * 1024):
+            with open(file_path, "rb") as f:
+                while chunk := f.read(chunk_size):
+                    yield chunk
+
+        headers = {"Content-Disposition": f"attachment; filename={download_file_name}"}
+
+        return StreamingResponse(file_iterator(result_path), media_type="application/octet-stream", headers=headers)
+

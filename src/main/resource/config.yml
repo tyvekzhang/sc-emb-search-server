@@ -1,12 +1,13 @@
 server:
-  name: DaFengServer
+  name: ScEmbSearch
   host: 0.0.0.0
   port: 19007
   version: 0.1.0
-  app_desc: Da feng helps us work more easily and happily.
+  app_desc: Cross-species Single-cell Embedding Search Library.
   api_version: /api/v1
-  workers: 2
-  h5ad_dir: /Container/Repository/H5ad
+  workers: 1
+  home_dir: /data/Container/Repository
+  model_dir: /data/Container/Repository/model_v1.1
 
 database:
   dialect: sqlite
@@ -27,4 +28,4 @@ security:
   access_token_expire_minutes: 30
   refresh_token_expire_days: 30
   white_list_routes: /v1/probe/liveness, /v1/probe/readiness, /v1/user/login, /v1/user/add, /v1/user/refreshTokens, /v1/user/export
-  backend_cors_origins: http://127.0.0.1:8090, http://localhost:8090, http://localhost
+  backend_cors_origins: http://127.0.0.1:8090, http://localhost:8090, http://localhost, http://127.0.0.1, http://scembsearch.zhejianglab.com

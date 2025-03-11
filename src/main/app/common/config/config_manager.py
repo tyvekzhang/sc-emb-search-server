@@ -1,6 +1,8 @@
 import os
 from functools import lru_cache
+from loguru import logger
 
+from src.main.app.common.cell_emb_search.cell_search_model import CellQuerySingleton
 from src.main.app.common.config.config import (
     Config,
 )
@@ -33,6 +35,19 @@ def load_config() -> Config:
     config_loader = ConfigLoader(env, config_file)
     config_dict = config_loader.load_config()
     config = Config(config_dict)
+    customer_dir = config.server.customer_dir
+    output_dir = config.server.output_dir
+    built_in_dir = config.server.built_in_dir
+    if not os.path.exists(customer_dir):
+        os.makedirs(customer_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    if not os.path.exists(built_in_dir):
+        os.makedirs(built_in_dir)
+    logger.info(f"开始加载模型")
+    cq = CellQuerySingleton(config.server.model_dir)
+    logger.info(f"模型加载完成")
+
     return config
 
 

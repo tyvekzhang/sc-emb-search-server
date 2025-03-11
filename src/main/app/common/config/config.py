@@ -12,7 +12,8 @@ class ServerConfig:
         app_desc: str = "Server",
         api_version: str = "/v1",
         workers: int = 1,
-        h5ad_dir: str = "/Container/Repository/H5ad"
+        home_dir: str = "/Container/Repository/H5ad",
+        model_dir: str = "/Container/Repository/model_v1.1"
     ) -> None:
         """
         Initializes server configuration with default host and port.
@@ -33,10 +34,11 @@ class ServerConfig:
         self.app_desc = app_desc
         self.api_version = api_version
         self.workers = workers
-        self.h5ad_dir = h5ad_dir
-        self.customer_dir = h5ad_dir + "/customers"
-        self.output_dir = h5ad_dir + "/output"
-        self.built_in_dir = h5ad_dir + "/built-in"
+        self.home_dir = home_dir
+        self.customer_dir = home_dir + "/customers"
+        self.output_dir = home_dir + "/output"
+        self.built_in_dir = home_dir + "/built-in"
+        self.model_dir = model_dir
 
     def __repr__(self) -> str:
         """

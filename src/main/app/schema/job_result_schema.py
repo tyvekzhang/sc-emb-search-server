@@ -1,4 +1,5 @@
 """JobResult schema"""
+from __future__ import annotations
 
 from datetime import datetime
 from typing import Optional, List
@@ -6,13 +7,13 @@ from pydantic import BaseModel, Field
 from src.main.app.schema.common_schema import PageBase
 
 class cell_emb_result(BaseModel):
-    index: int | None = None
-    study: str | None = None
-    sample: str | None = None
-    prediction: str | None = None
-    tissue: str | None = None
-    cell_line: bool | None = None
-    disease: str | None = None
+    index: Optional[int] = None
+    study: Optional[str] = None
+    sample: Optional[str] = None
+    prediction: Optional[str] = None
+    tissue: Optional[str] = None
+    cell_line: Optional[bool] = None
+    disease: Optional[str] = None
 
 class JobResultPage(BaseModel):
     """
