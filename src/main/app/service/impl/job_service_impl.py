@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import os
+import re
 from typing import Optional, List
 from typing import Union
 
@@ -11,7 +12,6 @@ import pandas as pd
 import scanpy as sc
 from fastapi import UploadFile, Request, BackgroundTasks
 from loguru import logger
-from scimilarity import CellQuery
 from scimilarity.utils import lognorm_counts, align_dataset
 from starlette.responses import StreamingResponse
 
@@ -33,6 +33,7 @@ from src.main.app.schema.job_result_schema import cell_emb_result
 from src.main.app.schema.job_schema import JobQuery, JobPage, JobDetail, JobCreate, JobSubmit, JobStatus
 from src.main.app.service.impl.service_base_impl import ServiceBaseImpl
 from src.main.app.service.job_service import JobService
+
 
 class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
     """
@@ -137,12 +138,26 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
             cell_index = job_submit.cell_index
             result_cell_count = job_submit.result_cell_count
 
-            if cell_index is None or cell_index < 0 or cell_index > adata.n_obs:
+            if cell_index is None:
                 cell_index = 1
+                adata = adata[cell_index, :]
+            else:
+                try:
+                    pattern = r'^-?\d+$'
+                    num = bool(re.match(pattern, cell_index))
+                    if num:
+                        if cell_index < 0 or cell_index > adata.n_obs:
+                            cell_index = 1
+                        adata = adata[cell_index, :]
+                    else:
+                        adata = adata[adata.obs_names.isin(cell_index)]
+                except:
+                    logger.error(f"不能够找到Barcode: {cell_index}")
+                    adata = adata[1, :]
+
             if result_cell_count is None or result_cell_count < 1 or result_cell_count > 10000:
                 result_cell_count = 10000
 
-            adata = adata[cell_index, :]
             if "counts" not in adata.layers:
                 adata.layers['counts'] = adata.X.copy()
             model_dir = load_config().server.model_dir
@@ -157,7 +172,12 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
             nn_idxs, nn_dists, results_metadata = cq.search_nearest(query_embedding, k=result_cell_count)
 
             # 将结果保存到 Excel 文件
-            results_metadata.to_excel(output_path)
+            results_metadata.to_excel(output_path, index=False)
+
+            df = pd.DataFrame(query_embedding)
+            emb_output_path = output_path.replace(".xlsx", "_emb.xlsx")
+            df.to_excel(emb_output_path, index=False)
+
 
             # 更新任务状态
             job.status = 3
@@ -255,10 +275,14 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
         return {"status": status, "records": cell_emb_results, "total": len(df)}
 
     @staticmethod
-    async def export_result(job_id: int, request: Request):
+    async def export_result(job_id: int, request: Request, emb: bool):
         output_dir = load_config().server.output_dir
         file_name = str(job_id) + ".xlsx"
+
         download_file_name = "export_data_" + file_name
+        if emb:
+            download_file_name = download_file_name.replace(".xlsx", "_emb.xlsx")
+            file_name = file_name.replace(".xlsx", "_emb.xlsx")
         result_path = os.path.join(output_dir, file_name)
         def file_iterator(file_path, chunk_size=1024 * 1024):
             with open(file_path, "rb") as f:

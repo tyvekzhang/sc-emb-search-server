@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Union
 from pydantic import BaseModel, Field
 from src.main.app.schema.common_schema import PageBase
 
@@ -69,7 +69,7 @@ class JobSubmit(BaseModel):
     # 文件标识
     file_info: str
     # 细胞的索引
-    cell_index: Optional[int] = 1
+    cell_index: Union[str, int] = None
     # 每个细胞返回的结果数
     result_cell_count: Optional[int] = 1
     # 父任务号

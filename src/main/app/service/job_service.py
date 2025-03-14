@@ -38,5 +38,5 @@ class JobService(ServiceBase[JobDO], ABC):
     async def get_result(self, job_id: int, request: Request, current: int , page_size: int ):...
 
     @abstractmethod
-    async def export_result(self, job_id: int, request: Request):
+    async def export_result(self, job_id: int, request: Request, emb: bool):
         pass

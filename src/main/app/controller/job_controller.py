@@ -46,9 +46,9 @@ async def export_job_page(
 
 @job_router.get("/export_result")
 async def export_job_page(
-    request: Request, job_id: int = Query(...)
+    request: Request, job_id: int = Query(...), emb: bool = False
 ) -> StreamingResponse:
-    return await job_service.export_result(job_id=job_id, request=request)
+    return await job_service.export_result(job_id=job_id, request=request, emb=emb)
 
 @job_router.post("/create")
 async def create_job(
