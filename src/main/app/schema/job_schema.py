@@ -62,6 +62,7 @@ class JobSubmit(BaseModel):
     """
     任务新增
     """
+    model: int
     # 任务名称
     job_name: Optional[str] = None
     # 任务类型

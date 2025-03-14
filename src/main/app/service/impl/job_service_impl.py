@@ -31,6 +31,7 @@ from src.main.app.model.sample_model import SampleDO
 from src.main.app.schema.common_schema import PageResult
 from src.main.app.schema.job_result_schema import cell_emb_result
 from src.main.app.schema.job_schema import JobQuery, JobPage, JobDetail, JobCreate, JobSubmit, JobStatus
+from src.main.app.service.geneformer.cell_embedding import generate_cell_embedding, process_embeddings
 from src.main.app.service.impl.service_base_impl import ServiceBaseImpl
 from src.main.app.service.job_service import JobService
 
@@ -132,7 +133,6 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
                 file_path = sample_record.sample_id + ".h5ad"
                 h5ad_path = os.path.join(built_in_dir, file_path)
 
-            # 使用 run_in_executor 将阻塞操作（如文件读取）放到线程池中执行
             adata = sc.read_h5ad(h5ad_path)
 
             cell_index = job_submit.cell_index
@@ -146,35 +146,41 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
                     pattern = r'^-?\d+$'
                     num = bool(re.match(pattern, cell_index))
                     if num:
-                        if cell_index < 0 or cell_index > adata.n_obs:
+                        cell_index = int(cell_index)
+                        if cell_index< 0 or cell_index > adata.n_obs:
                             cell_index = 1
                         adata = adata[cell_index, :]
                     else:
+                        cell_index = cell_index.replace("，", ",")
+                        cell_index = [index for index in cell_index.split(",")]
                         adata = adata[adata.obs_names.isin(cell_index)]
                 except:
                     logger.error(f"不能够找到Barcode: {cell_index}")
-                    adata = adata[1, :]
+                    raise
 
             if result_cell_count is None or result_cell_count < 1 or result_cell_count > 10000:
                 result_cell_count = 10000
-
-            if "counts" not in adata.layers:
-                adata.layers['counts'] = adata.X.copy()
             model_dir = load_config().server.model_dir
             logger.info(f"开始加载模型")
             cq = CellQuerySingleton(model_dir)
             logger.info(f"模型加载完成")
-            adata = align_dataset(adata, cq.gene_order)
-            adata = lognorm_counts(adata)
-            adata.obsm["X_scimilarity"] = cq.get_embeddings(adata.X)
-            query_embedding = adata.obsm["X_scimilarity"]
-
+            query_embedding = None
+            df = None
+            if job_submit.model == 2:
+                query_embedding = generate_cell_embedding(adata, job)
+                df = pd.DataFrame(query_embedding)
+                query_embedding = process_embeddings(query_embedding)
+            elif job_submit.model == 1:
+                if "counts" not in adata.layers:
+                    adata.layers['counts'] = adata.X.copy()
+                adata = align_dataset(adata, cq.gene_order)
+                adata = lognorm_counts(adata)
+                adata.obsm["X_scimilarity"] = cq.get_embeddings(adata.X)
+                query_embedding = adata.obsm["X_scimilarity"]
+                df = pd.DataFrame(query_embedding)
             nn_idxs, nn_dists, results_metadata = cq.search_nearest(query_embedding, k=result_cell_count)
-
             # 将结果保存到 Excel 文件
             results_metadata.to_excel(output_path, index=False)
-
-            df = pd.DataFrame(query_embedding)
             emb_output_path = output_path.replace(".xlsx", "_emb.xlsx")
             df.to_excel(emb_output_path, index=False)
 

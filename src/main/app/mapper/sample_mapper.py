@@ -10,7 +10,7 @@ from sqlmodel import select
 class SampleMapper(SqlModelMapper[SampleDO]):
     async def fetch_all_sample_by_species(self, species: str, db_session: Union[AsyncSession, None] = None):
         db_session = db_session or self.db.session
-        statement = select(SampleDO.id, SampleDO.sample_id).where(SampleDO.species == species)
+        statement = select(SampleDO.id, SampleDO.sample_id, SampleDO.tissue).where(SampleDO.species == species)
         db_response = await db_session.exec(statement)
         return db_response.all()
 

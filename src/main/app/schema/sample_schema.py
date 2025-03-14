@@ -158,6 +158,8 @@ class SampleOptions(BaseModel):
     id: int
     # 样本名
     sample_id: str = None
+    # 组织、器官
+    tissue: Optional[str] = None
 
 class SampleDetail(BaseModel):
     """

@@ -20,6 +20,20 @@ dependencies = [
     "cryptography>=44.0.2",
     "scimilarity>=0.3.0",
     "numpy<2",
+    "anndata>=0.9",
+    "datasets>=2.12",
+    "hyperopt>=0.2",
+    "loompy>=3.0",
+    "matplotlib>=3.7",
+    "optuna>=3.6",
+    "optuna-integration>=3.6",
+    "packaging>=23.0",
+    "pyarrow>=12.0",
+    "scikit-learn>=1.2",
+    "tdigest>=0.5.2",
+    "tensorboard>=2.15",
+    "tqdm>=4.65",
+    "transformers>=4.40",
 ]
 
 [[tool.uv.index]]

@@ -170,4 +170,4 @@ class SampleServiceImpl(ServiceBaseImpl[SampleMapper, SampleDO], SampleService):
         records = await self.mapper.fetch_all_sample_by_species(species=species)
         if records is None or len(records) == 0:
             return records
-        return [SampleOptions(id=id, sample_id=sample_id) for (id, sample_id) in records]
+        return [SampleOptions(id=id, sample_id=sample_id, tissue=tissue) for (id, sample_id, tissue) in records]

@@ -37,7 +37,6 @@ test:
 	coverage html
 
 start:
-	alembic upgrade head && \
 	python src/main/apiserver.py
 
 clean:
