@@ -157,7 +157,8 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
                 except:
                     logger.error(f"不能够找到Barcode: {cell_index}")
                     raise
-
+            adata.var_names = [name.upper() for name in adata.var_names]
+            adata.var_names_make_unique()
             if result_cell_count is None or result_cell_count < 1 or result_cell_count > 10000:
                 result_cell_count = 10000
             model_dir = load_config().server.model_dir
@@ -206,6 +207,7 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
             job.status = 4
             await jobMapper.update_by_id(record=job, db_session=session)
             await session.commit()
+            raise
             logger.info(f"job已失败{job}")
 
     async def submit_job(self, job_submit: JobSubmit, request: Request, background_tasks: BackgroundTasks) -> JobDO:
@@ -285,7 +287,7 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
         output_dir = load_config().server.output_dir
         file_name = str(job_id) + ".xlsx"
 
-        download_file_name = "export_data_" + file_name
+        download_file_name = "cell_emb_" + file_name
         if emb:
             download_file_name = download_file_name.replace(".xlsx", "_emb.xlsx")
             file_name = file_name.replace(".xlsx", "_emb.xlsx")

@@ -16,18 +16,6 @@ from src.main.app.model.job_model import JobDO
 from ..geneformer import EmbExtractor
 from ..geneformer.tokenizer import TOKEN_DICTIONARY_FILE, TranscriptomeTokenizer
 
-gene_info_path = str(load_config().server.model_dir) + os.sep + "geneformer" + os.sep + "gene_info_table.csv"
-gene_info = pd.read_csv(gene_info_path)
-gene_name_id_combine_dict = gene_info.set_index("gene_name")["ensembl_id"].to_dict()
-gene_name_type_dict = gene_info.set_index("gene_name")["gene_type"].to_dict()
-gene_id_type_dict = gene_info.set_index("ensembl_id")["gene_type"].to_dict()
-func_gene_list = [
-    i
-    for i in gene_info[
-        (gene_info["gene_type"] == "protein_coding")
-        | (gene_info["gene_type"] == "miRNA")
-    ]["ensembl_id"]
-]
 
 with open(TOKEN_DICTIONARY_FILE, "rb") as f:
     gene_token_info = pickle.load(f)
@@ -43,6 +31,18 @@ def preprocess(adata: AnnData, job: JobDO) -> str:
     Preprocess for h5ad
     """
     try:
+        gene_info_path = str(load_config().server.model_dir) + os.sep + "geneformer" + os.sep + "gene_info_table.csv"
+        gene_info = pd.read_csv(gene_info_path)
+        gene_name_id_combine_dict = gene_info.set_index("gene_name")["ensembl_id"].to_dict()
+        gene_name_type_dict = gene_info.set_index("gene_name")["gene_type"].to_dict()
+        gene_id_type_dict = gene_info.set_index("ensembl_id")["gene_type"].to_dict()
+        func_gene_list = [
+            i
+            for i in gene_info[
+                (gene_info["gene_type"] == "protein_coding")
+                | (gene_info["gene_type"] == "miRNA")
+                ]["ensembl_id"]
+        ]
         job_id = str(job.id)
         task_dir = str(load_config().server.output_dir) + os.sep + job_id
         if not os.path.exists(task_dir):
