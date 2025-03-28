@@ -44,9 +44,11 @@ def load_config() -> Config:
         os.makedirs(output_dir)
     if not os.path.exists(built_in_dir):
         os.makedirs(built_in_dir)
-    logger.info(f"开始加载模型")
+    # logger.info(f"开始加载模型")
     # CellQuerySingleton(config.server.model_dir)
-    logger.info(f"模型加载完成")
+    # logger.info(f"模型加载完成")
+    logger.warning(f"模型没有在启动时加载")
+
 
     return config
 

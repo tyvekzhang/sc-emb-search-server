@@ -2,6 +2,9 @@
 
 import http
 import os
+import random
+import numpy as np
+import torch
 
 from fastapi import FastAPI
 from fastapi import Request
@@ -27,9 +30,14 @@ from src.main.app.common.enums.enum import ResponseCode
 from src.main.app.common.exception.exception import ServiceException
 from src.main.app.common.session.db_engine import get_async_engine
 from src.main.app.common.session.db_session_middleware import SQLAlchemyMiddleware
-from src.main.app.common.util.security_util import is_token_valid, get_user_id
+from src.main.app.common.util.security_util import get_user_id
 from src.main.app.common.util.work_path_util import resource_dir
 from src.main.app.router.router import create_router
+
+random.seed(2025)
+np.random.seed(2025)
+torch.manual_seed(2025)
+torch.cuda.manual_seed_all(2025)
 
 config = load_config()
 server_config = config.server
