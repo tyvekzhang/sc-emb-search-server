@@ -8,7 +8,7 @@ database:
   # When use sqlite do not need to set url and default in src/main/resource/alembic/db/server.db
   # Url format: driver://user:pass@localhost:port/dbname
 #  url: "mysql+aiomysql://root:123456@localhost:3306/sc-emb-search"
-  url: "postgresql+asyncpg://root:My_dev-123@172.21.14.53:5432/sc-emb-search"
+  url: "postgresql+asyncpg://postgres:123456@172.21.14.53:5433/postgres"
 
 security:
   enable: False

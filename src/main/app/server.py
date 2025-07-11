@@ -52,6 +52,15 @@ app = FastAPI(
 app.add_middleware(SQLAlchemyMiddleware, custom_engine=get_async_engine())
 app.mount("/static", StaticFiles(directory=os.path.join(resource_dir, "static")), name="static")
 
+logger.add(
+    "/var/log/sc_emb_search/sc_emb_search.log",
+    rotation="10 MB",
+    retention="30 days",
+    compression="zip",
+    level="INFO",
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
+)
+
 router = create_router()
 app.include_router(router, prefix=server_config.api_version)
 

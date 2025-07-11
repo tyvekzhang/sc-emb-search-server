@@ -7,7 +7,7 @@ from fastapi import UploadFile, Request
 from starlette.responses import StreamingResponse
 from src.main.app.model.file_model import FileDO
 from src.main.app.schema.common_schema import PageResult
-from src.main.app.schema.file_schema import FileQuery, FileDetail, FileCreate
+from src.main.app.schema.file_schema import FileQuery, FileDetail, FileCreate, UploadResponse
 from src.main.app.service.service_base import ServiceBase
 
 
@@ -32,5 +32,7 @@ class FileService(ServiceBase[FileDO], ABC):
     async def import_file(self, *, file: UploadFile, request: Request) -> List[FileCreate]:...
 
     @abstractmethod
-    async def upload_file(self, file: UploadFile, request: Request):
-        pass
+    async def upload_file(self, file: UploadFile, request: Request) -> UploadResponse:...
+
+    @abstractmethod
+    async def get_barcode(self, sample_id: int) -> List[str]:...

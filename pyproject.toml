@@ -35,6 +35,8 @@ dependencies = [
     "tqdm>=4.65",
     "transformers>=4.40",
     "asyncpg>=0.30.0",
+    "pgvector>=0.4.1",
+    "scanpy>=1.10.3",
 ]
 
 [[tool.uv.index]]

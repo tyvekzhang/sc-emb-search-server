@@ -24,7 +24,7 @@ class JobResultBase(SQLModel):
     )
     job_id: Optional[int] = Field(
         sa_column=Column(
-            Integer,
+            BigInteger,
             nullable=True,
             default=None,
             comment="任务Id"
@@ -32,7 +32,7 @@ class JobResultBase(SQLModel):
     )
     file_id: Optional[int] = Field(
         sa_column=Column(
-            Integer,
+            BigInteger,
             nullable=True,
             default=None,
             comment="文件Id"

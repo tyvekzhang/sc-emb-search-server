@@ -1,13 +1,14 @@
 server:
   host: 0.0.0.0
-  port: 19001
   workers: 1
 
 database:
-  dialect: mysql
+#  dialect: mysql
+  dialect: pgsql
   # When use sqlite do not need to set url and default in src/main/resource/alembic/db/server.db
   # Url format: driver://user:pass@localhost:port/dbname
-  url: "mysql+aiomysql://root:123456@localhost:3306/sc-emb-search"
+#  url: "mysql+aiomysql://root:123456@localhost:3306/sc-emb-search"
+  url: "postgresql+asyncpg://postgres:My_dev-1234@127.0.0.1:5432/postgres"
 
 security:
   enable: False

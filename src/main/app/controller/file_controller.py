@@ -72,6 +72,14 @@ async def upload_file(
     service_response = await file_service.upload_file(file=file, request=request)
     return HttpResponse.success(data=service_response)
 
+
+@file_router.get("/barcode")
+async def get_barcode(
+    sample_id: int
+) -> Dict[str, Any]:
+    service_response = await file_service.get_barcode(sample_id=sample_id)
+    return HttpResponse.success(data=service_response)
+
 @file_router.delete("/remove/{id}")
 async def remove(
     id: int, request: Request

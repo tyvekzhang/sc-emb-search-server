@@ -1,14 +1,9 @@
 from threading import Lock
-from typing import Dict, Union
+from typing import Dict
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
-from sqlalchemy.pool import NullPool
-from sqlmodel import select
+
 from src.main.app.common.config.config_manager import load_config
-from src.main.app.common.enums.enum import ResponseCode
-from src.main.app.common.exception.exception import SystemException
-from src.main.app.common.session.db_session import db_session
-from src.main.app.common.util.work_path_util import db_path
 
 # Global engine cache with thread safety
 _engine_map: Dict[str, AsyncEngine] = {}

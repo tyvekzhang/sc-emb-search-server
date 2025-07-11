@@ -30,9 +30,17 @@ class JobBase(SQLModel):
             comment="任务名称"
         )
     )
-    parent_job_id: Optional[str] = Field(
+    species: Optional[int] = Field(
         sa_column=Column(
-            String(32),
+            Integer,
+            nullable=True,
+            default=None,
+            comment="物种名称"
+        )
+    )
+    parent_job_id: Optional[int] = Field(
+        sa_column=Column(
+            BigInteger,
             nullable=True,
             default=None,
             comment="父任务号"

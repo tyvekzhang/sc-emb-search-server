@@ -2736,6 +2736,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pgvector"
+version = "0.4.1"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/44/43/9a0fb552ab4fd980680c2037962e331820f67585df740bedc4a2b50faf20/pgvector-0.4.1.tar.gz", hash = "sha256:83d3a1c044ff0c2f1e95d13dfb625beb0b65506cfec0941bfe81fd0ad44f4003" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/bf/21/b5735d5982892c878ff3d01bb06e018c43fc204428361ee9fc25a1b2125c/pgvector-0.4.1-py3-none-any.whl", hash = "sha256:34bb4e99e1b13d08a2fe82dda9f860f15ddcd0166fbb25bffe15821cbfeb7362" },
+]
+
+[[package]]
 name = "pillow"
 version = "11.1.0"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
@@ -3461,8 +3473,11 @@ dependencies = [
     { name = "packaging" },
     { name = "pandas" },
     { name = "passlib", extra = ["bcrypt"] },
+    { name = "pgvector" },
     { name = "pyarrow" },
     { name = "pyjwt" },
+    { name = "scanpy", version = "1.10.3", source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }, marker = "python_full_version < '3.10'" },
+    { name = "scanpy", version = "1.11.0", source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }, marker = "python_full_version >= '3.10'" },
     { name = "scikit-learn" },
     { name = "scimilarity" },
     { name = "sqlmodel" },
@@ -3495,8 +3510,10 @@ requires-dist = [
     { name = "packaging", specifier = ">=23.0" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
+    { name = "pgvector", specifier = ">=0.4.1" },
     { name = "pyarrow", specifier = ">=12.0" },
     { name = "pyjwt", specifier = ">=2.9.0" },
+    { name = "scanpy", specifier = ">=1.10.3" },
     { name = "scikit-learn", specifier = ">=1.2" },
     { name = "scimilarity", specifier = ">=0.3.0" },
     { name = "sqlmodel", specifier = ">=0.0.22" },

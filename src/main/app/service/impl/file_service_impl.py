@@ -4,6 +4,7 @@ from __future__ import annotations
 import io
 import os
 import uuid
+import scanpy as sc
 from pathlib import Path
 from typing import Optional, List
 from typing import Union
@@ -17,9 +18,11 @@ from src.main.app.common.exception.exception import ParameterException
 from src.main.app.common.util.excel_util import export_excel
 from src.main.app.common.util.validate_util import ValidateService
 from src.main.app.mapper.file_mapper import FileMapper
+from src.main.app.mapper.sample_mapper import sampleMapper
 from src.main.app.model.file_model import FileDO
+from src.main.app.model.sample_model import SampleDO
 from src.main.app.schema.common_schema import PageResult
-from src.main.app.schema.file_schema import FileQuery, FilePage, FileDetail, FileCreate
+from src.main.app.schema.file_schema import FileQuery, FilePage, FileDetail, FileCreate, UploadResponse
 from src.main.app.service.impl.service_base_impl import ServiceBaseImpl
 from src.main.app.service.file_service import FileService
 
@@ -131,7 +134,7 @@ class FileServiceImpl(ServiceBaseImpl[FileMapper, FileDO], FileService):
 
         return file_create_list
 
-    async def upload_file(self, file: UploadFile, request: Request):
+    async def upload_file(self, file: UploadFile, request: Request) -> UploadResponse:
         file_name = file.filename
         if not file_name.endswith(".h5ad"):
             raise ParameterException
@@ -146,7 +149,20 @@ class FileServiceImpl(ServiceBaseImpl[FileMapper, FileDO], FileService):
                 f.write(contents)
         except Exception as e:
             raise Exception(f"Error writing file: {e}")
+        adata = sc.read_h5ad(h5ad_path)
         file_data = FileDO(name=file_name, path=save_file_name, size=file.size)
         await self.save(data=file_data)
-        return file_data.id
+        return UploadResponse(file_id=file_data.id, barcode_list=list(adata.obs_names))
+
+
+    async def get_barcode(self, sample_id: int) -> List[str]:
+        sample_record: SampleDO = await sampleMapper.select_by_id(id=sample_id)
+        home_dir = Path(str(load_config().server.built_in_dir))
+        file_name = f"{sample_record.sample_id}.h5ad"
+        file_path = os.path.join(home_dir, file_name)
+        if not os.path.exists(file_path):
+            raise ValueError(f"{file_name} not exists")
+        adata = sc.read_h5ad(file_path)
+        obs_names = adata.obs_names
+        return list(obs_names)
         

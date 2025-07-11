@@ -87,3 +87,7 @@ class FileDetail(BaseModel):
     size: Optional[int] = None
     # 创建时间
     create_time: Optional[datetime] = None
+
+class UploadResponse(BaseModel):
+    file_id: int
+    barcode_list: List[str]

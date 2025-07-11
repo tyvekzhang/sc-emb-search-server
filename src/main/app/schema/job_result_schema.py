@@ -6,7 +6,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 from src.main.app.schema.common_schema import PageBase
 
-class cell_emb_result(BaseModel):
+class CellEmbResult(BaseModel):
     index: Optional[int] = None
     study: Optional[str] = None
     sample: Optional[str] = None
@@ -14,6 +14,16 @@ class cell_emb_result(BaseModel):
     tissue: Optional[str] = None
     cell_line: Optional[bool] = None
     disease: Optional[str] = None
+
+class GeneformerEmbResult(BaseModel):
+    sample_id: Optional[str] = None
+    assay: Optional[str] = None
+    organism: Optional[str] = None
+    development_stage: Optional[str] = None
+    tissue: Optional[str] = None
+    disease: Optional[str] = None
+    sex: Optional[str] = None
+    cell_type: Optional[str] = None
 
 class JobResultPage(BaseModel):
     """

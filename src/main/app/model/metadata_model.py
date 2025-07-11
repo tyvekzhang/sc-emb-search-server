@@ -1,5 +1,3 @@
-"""Sample data object"""
-
 from datetime import datetime
 from typing import Optional
 from sqlmodel import (
@@ -7,99 +5,117 @@ from sqlmodel import (
     Field,
     Column,
     BigInteger,
-    DateTime,
     String,
-    Integer,
-    Text
+    DateTime,
 )
+from pgvector.sqlalchemy import Vector
 from src.main.app.common.util.snowflake_util import snowflake_id
 
 
-class SampleBase(SQLModel):
-    
+class MetadataBase(SQLModel):
     id: int = Field(
         default_factory=snowflake_id,
         primary_key=True,
         sa_type=BigInteger,
         sa_column_kwargs={"comment": "主键"},
     )
-    species: Optional[str] = Field(
-        sa_column=Column(
-            String(64),
-            nullable=True,
-            default=None,
-            comment="物种"
-        )
-    )
-    sample_id: Optional[str] = Field(
-        sa_column=Column(
-            String(64),
-            nullable=True,
-            default=None,
-            comment="样本名"
-        )
-    )
-    project_id: Optional[str] = Field(
-        sa_column=Column(
-            String(64),
-            nullable=True,
-            default=None,
-            comment="项目名"
-        )
-    )
-    tissue: Optional[str] = Field(
-        sa_column=Column(
-            String(64),
-            nullable=True,
-            default=None,
-            comment="组织、器官"
-        )
-    )
-    cell_count: Optional[int] = Field(
-        sa_column=Column(
-            Integer,
-            nullable=True,
-            default=None,
-            comment="细胞数"
-        )
-    )
-    project_title: Optional[str] = Field(
+    barcode: Optional[str] = Field(
         sa_column=Column(
             String(255),
             nullable=True,
             default=None,
-            comment="项目标题"
+            comment="细胞标识"
         )
     )
-    project_summary: Optional[str] = Field(
+
+    sample_id: Optional[str] = Field(
         sa_column=Column(
-            Text,
+            String(255),
             nullable=True,
             default=None,
-            comment="项目总结"
+            comment="样本ID"
         )
     )
-    platform: Optional[str] = Field(
+
+    assay: Optional[str] = Field(
         sa_column=Column(
-            String(64),
+            String(255),
             nullable=True,
             default=None,
             comment="测序平台"
         )
     )
-    ext: Optional[str] = Field(
+
+    organism: Optional[str] = Field(
         sa_column=Column(
-            Text,
+            String(255),
             nullable=True,
             default=None,
-            comment="扩展字段"
+            comment="物种"
         )
     )
+
+    development_stage: Optional[str] = Field(
+        sa_column=Column(
+            String(255),
+            nullable=True,
+            default=None,
+            comment="发育阶段"
+        )
+    )
+
+    tissue: Optional[str] = Field(
+        sa_column=Column(
+            String(255),
+            nullable=True,
+            default=None,
+            comment="组织类型"
+        )
+    )
+
+    disease: Optional[str] = Field(
+        sa_column=Column(
+            String(255),
+            nullable=True,
+            default=None,
+            comment="疾病状态"
+        )
+    )
+
+    sex: Optional[str] = Field(
+        sa_column=Column(
+            String(50),
+            nullable=True,
+            default=None,
+            comment="性别"
+        )
+    )
+
+    cell_type: Optional[str] = Field(
+        sa_column=Column(
+            String(255),
+            nullable=True,
+            default=None,
+            comment="细胞类型"
+        )
+    )
+
+    # 使用 pgvector 存储 cell_embedding 向量
+    cell_embedding: Optional[list[float]] = Field(
+        sa_column=Column(
+            Vector(512),
+            nullable=True,
+            default=None,
+            comment="细胞向量"
+        )
+    )
+
     create_time: Optional[datetime] = Field(
         sa_type=DateTime,
         default_factory=datetime.now,
         sa_column_kwargs={"comment": "创建时间"},
     )
+
     update_time: Optional[datetime] = Field(
         sa_type=DateTime,
         default_factory=datetime.now,
@@ -110,8 +126,8 @@ class SampleBase(SQLModel):
     )
 
 
-class SampleDO(SampleBase, table=True):
-    __tablename__ = "sample"
+class MetadataEntity(MetadataBase, table=True):
+    __tablename__ = "metadata"
     __table_args__ = (
-        {"comment": "样本表"}
+        {"comment": "元数据表"}
     )

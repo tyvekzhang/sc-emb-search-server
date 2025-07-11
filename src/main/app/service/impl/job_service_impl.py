@@ -5,8 +5,9 @@ from __future__ import annotations
 import io
 import os
 import re
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from typing import Union
+import traceback
 
 import pandas as pd
 import scanpy as sc
@@ -23,13 +24,15 @@ from src.main.app.common.util.validate_util import ValidateService
 from src.main.app.mapper.file_mapper import fileMapper
 from src.main.app.mapper.job_mapper import JobMapper, jobMapper
 from src.main.app.mapper.job_result_mapper import jobResultMapper
+from src.main.app.mapper.metadata_mapper import metadataMapper
 from src.main.app.mapper.sample_mapper import sampleMapper
 from src.main.app.model.file_model import FileDO
 from src.main.app.model.job_model import JobDO
 from src.main.app.model.job_result_model import JobResultDO
+from src.main.app.model.metadata_model import MetadataEntity
 from src.main.app.model.sample_model import SampleDO
 from src.main.app.schema.common_schema import PageResult
-from src.main.app.schema.job_result_schema import cell_emb_result
+from src.main.app.schema.job_result_schema import CellEmbResult, GeneformerEmbResult
 from src.main.app.schema.job_schema import JobQuery, JobPage, JobDetail, JobCreate, JobSubmit, JobStatus
 from src.main.app.service.geneformer.cell_embedding import generate_cell_embedding, process_embeddings
 from src.main.app.service.impl.service_base_impl import ServiceBaseImpl
@@ -110,6 +113,7 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
         return await self.save(data=job)
 
     async def generate_search_result(self, job_submit: JobSubmit, job: JobDO):
+        logger.info(job_submit)
         session = self.mapper.db.session
         job_id = job.id
         file_name = str(job_id) + ".xlsx"
@@ -123,17 +127,18 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
             # 本地文件上传
             if job_submit.job_type == 1:
                 customer_dir = server_config.customer_dir
-                file_record: FileDO = await fileMapper.select_by_id(id=file_info, db_session=session)
+                file_record: FileDO = await fileMapper.select_by_id(id=int(file_info), db_session=session)
                 file_path = file_record.path
                 h5ad_path = os.path.join(customer_dir, file_path)
             # 内置文件
             elif job_submit.job_type == 2:
                 built_in_dir = server_config.built_in_dir
-                sample_record: SampleDO = await sampleMapper.select_by_id(id=file_info, db_session=session)
+                sample_record: SampleDO = await sampleMapper.select_by_id(id=int(file_info), db_session=session)
                 file_path = sample_record.sample_id + ".h5ad"
                 h5ad_path = os.path.join(built_in_dir, file_path)
 
             adata = sc.read_h5ad(h5ad_path)
+            logger.info(f"read h5ad file {h5ad_path}")
 
             cell_index = job_submit.cell_index
             result_cell_count = job_submit.result_cell_count
@@ -162,16 +167,11 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
             if result_cell_count is None or result_cell_count < 1 or result_cell_count > 10000:
                 result_cell_count = 10000
             model_dir = load_config().server.model_dir
-            logger.info(f"开始加载模型")
-            cq = CellQuerySingleton(model_dir)
-            logger.info(f"模型加载完成")
-            query_embedding = None
-            df = None
-            if job_submit.model == 2:
-                query_embedding = generate_cell_embedding(adata, job)
-                df = pd.DataFrame(query_embedding)
-                query_embedding = process_embeddings(query_embedding)
-            elif job_submit.model == 1:
+            # 人类
+            if job_submit.species == 1:
+                logger.info(f"开始加载scimilarity模型")
+                cq = CellQuerySingleton(model_dir)
+                logger.info(f"模型加载完成")
                 if "counts" not in adata.layers:
                     adata.layers['counts'] = adata.X.copy()
                 adata = align_dataset(adata, cq.gene_order)
@@ -179,7 +179,30 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
                 adata.obsm["X_scimilarity"] = cq.get_embeddings(adata.X)
                 query_embedding = adata.obsm["X_scimilarity"]
                 df = pd.DataFrame(query_embedding)
-            nn_idxs, nn_dists, results_metadata = cq.search_nearest(query_embedding, k=result_cell_count)
+                nn_idxs, nn_dists, results_metadata = cq.search_nearest(query_embedding, k=result_cell_count)
+            else:
+                # 小鼠
+                logger.info(f"使用geneformer模型")
+                if "gene_name" in adata.var.columns:
+                    # 将gene_name设置为var的索引
+                    adata.var.index = list(adata.var["gene_name"])
+                adata.var.index = [str(i).upper() for i in  adata.var.index]
+                adata.var_names_make_unique()
+                query_embedding_df = generate_cell_embedding(adata, job)
+
+                df = query_embedding_df
+                query_embedding = query_embedding_df.values.flatten().tolist()
+                logger.info(f"query_embedding: {query_embedding}")
+                metadata_records: List[Tuple[MetadataEntity, float]] =  await metadataMapper.get_docs_by_vector(embedding=query_embedding, top_k=job_submit.result_cell_count)
+                data = [
+                    {**vars(metadata), "score": score}  # 假设metadata是对象，使用vars()转换为字典
+                    if hasattr(metadata, '__dict__') else
+                    {**metadata, "score": score}  # 如果metadata已经是字典
+                    for metadata, score in metadata_records
+                ]
+                results_metadata = pd.DataFrame(data)
+                columns_to_drop = ["_sa_instance_state", "create_time", "update_time", "cell_embedding"]
+                results_metadata = results_metadata.drop(columns=columns_to_drop, errors="ignore")
             # 将结果保存到 Excel 文件
             results_metadata.to_excel(output_path, index=False)
             emb_output_path = output_path.replace(".xlsx", "_emb.xlsx")
@@ -204,6 +227,7 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
 
         except Exception as e:
             logger.error(f"{e}")
+            traceback.print_stack()
             job.status = 4
             await jobMapper.update_by_id(record=job, db_session=session)
             await session.commit()
@@ -279,8 +303,12 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
         end = start + page_size
         paginated_df = df.iloc[start:end]
         data_dicts = paginated_df.to_dict(orient="records")
-        cell_emb_results: List[cell_emb_result] = [cell_emb_result(**item) for item in data_dicts]
-        return {"status": status, "records": cell_emb_results, "total": len(df)}
+        species = job_record.species
+        if species == 1:
+            emb_results: List[CellEmbResult] = [CellEmbResult(**item) for item in data_dicts]
+        else:
+            emb_results: List[GeneformerEmbResult] = [GeneformerEmbResult(**item) for item in data_dicts]
+        return {"status": status, "records": emb_results, "total": len(df), "species": species}
 
     @staticmethod
     async def export_result(job_id: int, request: Request, emb: bool):

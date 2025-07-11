@@ -6,8 +6,8 @@ server:
   app_desc: Cross-species Single-cell Embedding Search Library.
   api_version: /api/v1
   workers: 1
-  home_dir: /data/Container/Repository
-  model_dir: /data/Container/Repository/model_v1.1
+  home_dir: /data/scRNA/tyvekz/emb-search/h5ad
+  model_dir: /data/scRNA/tyvekz/emb-search/model/model_v1.1
 
 database:
   dialect: sqlite

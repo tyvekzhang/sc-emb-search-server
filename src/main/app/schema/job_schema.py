@@ -20,7 +20,7 @@ class JobPage(BaseModel):
     # 任务名称
     job_name: Optional[str] = None
     # 父任务号
-    parent_job_id: Optional[str] = None
+    parent_job_id: Optional[int] = None
     # 状态
     status: Optional[int] = None
     # 描述
@@ -48,7 +48,7 @@ class JobCreate(BaseModel):
     # 任务名称
     job_name: Optional[str] = None
     # 父任务号
-    parent_job_id: Optional[str] = None
+    parent_job_id: Optional[int] = None
     # 状态
     status: Optional[int] = None
     # 描述
@@ -69,12 +69,14 @@ class JobSubmit(BaseModel):
     job_type: int
     # 文件标识
     file_info: str
+    # 物种信息
+    species: int
     # 细胞的索引
     cell_index: Union[str, int] = None
     # 每个细胞返回的结果数
     result_cell_count: Optional[int] = 1
     # 父任务号
-    parent_job_id: Optional[str] = None
+    parent_job_id: Optional[int] = None
     # 状态
     status: Optional[int] = 1
     # 描述
@@ -93,7 +95,7 @@ class JobModify(BaseModel):
     # 任务名称
     job_name: Optional[str] = None
     # 父任务号
-    parent_job_id: Optional[str] = None
+    parent_job_id: Optional[int] = None
     # 状态
     status: Optional[int] = None
     # 描述
@@ -109,7 +111,7 @@ class JobBatchModify(BaseModel):
     # 任务名称
     job_name: Optional[str] = None
     # 父任务号
-    parent_job_id: Optional[str] = None
+    parent_job_id: Optional[int] = None
     # 状态
     status: Optional[int] = None
     # 描述
@@ -126,7 +128,7 @@ class JobDetail(BaseModel):
     # 任务名称
     job_name: Optional[str] = None
     # 父任务号
-    parent_job_id: Optional[str] = None
+    parent_job_id: Optional[int] = None
     # 状态
     status: Optional[int] = None
     # 描述
