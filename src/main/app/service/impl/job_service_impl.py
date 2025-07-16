@@ -192,8 +192,9 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
 
                 df = query_embedding_df
                 query_embedding = query_embedding_df.values.flatten().tolist()
-                logger.info(f"query_embedding: {query_embedding}")
+                logger.info(f"query_embedding: {type(query_embedding)}")
                 metadata_records: List[Tuple[MetadataEntity, float]] =  await metadataMapper.get_docs_by_vector(embedding=query_embedding, top_k=job_submit.result_cell_count)
+                logger.info(f"metadata_records: {metadata_records}")
                 data = [
                     {**vars(metadata), "score": score}  # 假设metadata是对象，使用vars()转换为字典
                     if hasattr(metadata, '__dict__') else
@@ -295,7 +296,9 @@ class JobServiceImpl(ServiceBaseImpl[JobMapper, JobDO], JobService):
         file_record: FileDO = await fileMapper.select_by_id(id=file_id)
         file_path = file_record.path
         output_dir = load_config().server.output_dir
-        df = pd.read_excel(os.path.join(output_dir, file_path))
+        output_file_path = os.path.join(output_dir, file_path)
+        logger.info(f"output_file_path: {output_file_path}")
+        df = pd.read_excel(output_file_path)
         df = df.fillna("-")
         start = (current - 1) * page_size
         if start >= len(df):
